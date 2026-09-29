@@ -12,52 +12,35 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Arm64 Multiarch Repositories & Toolchain
-        run: |
-          # 1. Enable the ARM64 architecture layout
-          sudo dpkg --add-architecture arm64
-          
-          # 2. Re-write the package manager sources list to split mirrors correctly
-          # This forces amd64 to use default archives, and arm64 to use the official ports server
-          sudo tee /etc/apt/sources.list << 'EOF'
-          # Standard x86_64 Mirrors
-          deb [arch=amd64] http://ubuntu.com noble main restricted universe multiverse
-          deb [arch=amd64] http://ubuntu.com noble-updates main restricted universe multiverse
-          deb [arch=amd64] http://ubuntu.com noble-backports main restricted universe multiverse
-          deb [arch=amd64] http://ubuntu.com noble-security main restricted universe multiverse
+      - name: Set up QEMU (ARM64 Emulation)
+        uses: docker/setup-qemu-action@v3
 
-          # ARM64 Ports Mirrors
-          deb [arch=arm64] http://ubuntu.com noble main restricted universe multiverse
-          deb [arch=arm64] http://ubuntu.com noble-updates main restricted universe multiverse
-          deb [arch=arm64] http://ubuntu.com noble-backports main restricted universe multiverse
-          deb [arch=arm64] http://ubuntu.com noble-security main restricted universe multiverse
-          EOF
+      - name: Run Build in Native ARM64 Container
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: aarch64
+          distro: ubuntu_latest
+          
+          # Pass paths down into our virtual workspace setup
+          githubToken: ${{ github.token }}
+          
+          # Install dependencies natively inside the virtual ARM64 environment
+          setup: |
+            apt-get update
+            apt-get install -y build-essential cmake git libgles2-mesa-dev libegl1-mesa-dev libdrm-dev libgbm-dev
 
-          # 3. Update package index now that mirrors are split properly
-          sudo apt-get update
-          
-          # 4. Install cross-compilers
-          sudo apt-get install -y build-essential cmake git gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-          
-          # 5. Install ARM64 libraries from the ports mirror
-          sudo apt-get install -y libgles2-mesa-dev:arm64 libegl1-mesa-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
-
-      - name: Compile via CMake
-        run: |
-          cd Oxygen/sonic3air/build/_cmake
-          
-          cmake -B build \
-            -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
-            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
-            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_FLAGS="-O3 -march=armv8-a" \
-            -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
-            -DUSE_GLES=ON \
-            -DBUILD_SDL_STATIC=ON
+          # Run the actual compile step natively as an ARM64 app
+          run: |
+            cd Oxygen/sonic3air/build/_cmake
             
-          cmake --build build --config Release --parallel $(nproc)
+            cmake -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_FLAGS="-O3 -march=armv8-a" \
+              -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
+              -DUSE_GLES=ON \
+              -DBUILD_SDL_STATIC=ON
+              
+            cmake --build build --config Release --parallel $(nproc)
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
