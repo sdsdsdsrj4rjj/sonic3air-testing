@@ -29,7 +29,7 @@ jobs:
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Point the include directory precisely to our newly populated local path layout
+        # Use an explicit absolute path to our header folder to fix the non-existent interface directory error
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -39,7 +39,7 @@ jobs:
           -DOPENGL_glx_LIBRARY=/dev/null \
           -DOPENGL_INCLUDE_DIR=/dev/null \
           -DCURL_LIBRARY=/dev/null \
-          -DCURL_INCLUDE_DIR=../../oxygenengine/source/framework/external/curl \
+          -DCURL_INCLUDE_DIR=${{ github.workspace }}/Oxygen/oxygenengine/source/framework/external/curl \
           -DSDL_STATIC=OFF \
           -DUSE_GLES=ON .
           
