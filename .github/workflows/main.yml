@@ -1,0 +1,33 @@
+name: Build ARM64 Linux
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up QEMU for ARM64 cross-compilation
+      uses: docker/setup-qemu-action@v3
+
+    - name: Install Build Dependencies via Chroot/Docker
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake
+
+    - name: Configure and Build CMake Project
+      run: |
+        cd Oxygen/sonic3air/build/_cmake
+        cmake -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ .
+        make -j$(nproc)
+
+    - name: Upload Compiled Binary Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sonic3air-linux-arm64
+        path: Oxygen/sonic3air/build/_cmake/sonic3air
