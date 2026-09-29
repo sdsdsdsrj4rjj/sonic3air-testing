@@ -19,17 +19,17 @@ jobs:
 
     - name: Inject Missing Curl Headers Domestically
       run: |
-        # Create the local destination directory structure
+        # Create the local destination directory structure safely
         mkdir -p Oxygen/oxygenengine/source/framework/external/curl/curl
         
-        # Copy the pre-installed system curl headers directly into the repository tree
-        cp /usr/include/curl/*.h Oxygen/oxygenengine/source/framework/external/curl/curl/
+        # Search all active system include locations for the curl header files and copy them over
+        find /usr/include -type f -wholename "*/curl/*.h" -exec cp {} Oxygen/oxygenengine/source/framework/external/curl/curl/ \;
 
     - name: Configure and Build CMake Project
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Point the include paths to our newly populated local directory structure
+        # Point the include directory precisely to our newly populated local path layout
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
