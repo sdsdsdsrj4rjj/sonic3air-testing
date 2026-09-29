@@ -19,7 +19,7 @@ jobs:
       run: |
         docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace -w /workspace arm64v8/ubuntu:24.04 bash -c "
           apt-get update && \
-          apt-get install -y gcc g++ cmake libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libsdl2-dev && \
+          apt-get install -y gcc g++ cmake libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libsdl2-dev libcurl4-openssl-dev && \
           cd Oxygen/sonic3air/build/_cmake && \
           cmake -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 . && \
           make -j$(nproc)
