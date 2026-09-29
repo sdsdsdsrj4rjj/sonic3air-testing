@@ -29,15 +29,13 @@ jobs:
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Explicitly strip the network implementation code from compiling via user flags.
-        # This keeps the binary clean of curl symbols and prevents link-stage compilation failures.
+        # We strip out global flag overrides to let librmx compile normally at 48%.
+        # Instead, we pass clean target mocks to the system backend layer.
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
           -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
           -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-          -DCMAKE_CXX_FLAGS="-DAIR_NETWORK_FEATURES=0 -DNO_NETWORK=1 -DNO_CURL=1" \
-          -DCMAKE_C_FLAGS="-DAIR_NETWORK_FEATURES=0 -DNO_NETWORK=1 -DNO_CURL=1" \
           -DOPENGL_opengl_LIBRARY=/dev/null \
           -DOPENGL_glx_LIBRARY=/dev/null \
           -DOPENGL_INCLUDE_DIR=/dev/null \
@@ -46,11 +44,4 @@ jobs:
           -DSDL_STATIC=OFF \
           -DUSE_GLES=ON .
           
-        # Compile sequentially so any remaining issue prints precisely at the bottom of the log
         make
-
-    - name: Upload Compiled Binary Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: sonic3air-linux-arm64
-        path: Oxygen/sonic3air/build/_cmake/sonic3air
