@@ -12,50 +12,18 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Set up QEMU for ARM64 cross-compilation
+    - name: Set up QEMU for ARM64 Emulation
       uses: docker/setup-qemu-action@v3
 
-    - name: Configure Multiarch Repositories & Install Dependencies
+    - name: Compile inside ARM64 Ubuntu Container
       run: |
-        sudo dpkg --add-architecture arm64
-        
-        # Rewrite sources.list to target standard repositories only for amd64/i386,
-        # and add ://ubuntu.com strictly for arm64 packages.
-        sudo tee /etc/apt/sources.list << 'EOF'
-        deb [arch=amd64,i386] http://ubuntu.com noble main restricted universe multiverse
-        deb [arch=amd64,i386] http://ubuntu.com noble-updates main restricted universe multiverse
-        deb [arch=amd64,i386] http://ubuntu.com noble-backports main restricted universe multiverse
-        deb [arch=amd64,i386] http://ubuntu.com noble-security main restricted universe multiverse
-
-        deb [arch=arm64] http://://ubuntu.com/ubuntu-ports/ noble main restricted universe multiverse
-        deb [arch=arm64] http://://ubuntu.com/ubuntu-ports/ noble-updates main restricted universe multiverse
-        deb [arch=arm64] http://://ubuntu.com/ubuntu-ports/ noble-backports main restricted universe multiverse
-        deb [arch=arm64] http://://ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse
-        EOF
-
-        sudo apt-get update
-        sudo apt-get install -y \
-          gcc-aarch64-linux-gnu \
-          g++-aarch64-linux-gnu \
-          cmake \
-          libgl1-mesa-dev:arm64 \
-          libglu1-mesa-dev:arm64 \
-          libegl1-mesa-dev:arm64 \
-          libsdl2-dev:arm64
-
-    - name: Configure and Build CMake Project
-      run: |
-        cd Oxygen/sonic3air/build/_cmake
-        cmake \
-          -DCMAKE_SYSTEM_NAME=Linux \
-          -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
-          -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
-          -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-          -DCMAKE_FIND_ROOT_PATH=/usr/lib/aarch64-linux-gnu \
-          -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-          -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
-          -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY .
-        make -j$(nproc)
+        docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace -w /workspace arm64v8/ubuntu:24.04 bash -c "
+          apt-get update && \
+          apt-get install -y gcc g++ cmake libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libsdl2-dev && \
+          cd Oxygen/sonic3air/build/_cmake && \
+          cmake -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 . && \
+          make -j$(nproc)
+        "
 
     - name: Upload Compiled Binary Artifact
       uses: actions/upload-artifact@v4
