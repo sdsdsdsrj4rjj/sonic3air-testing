@@ -52,6 +52,7 @@ jobs:
           #include <stdint.h>
 
           typedef struct SDL_Joystick SDL_Joystick;
+          typedef struct SDL_GameController SDL_GameController;
 
           /*
            * PortMaster's older SDL2 does not export these newer SDL2 entry points.
@@ -69,11 +70,23 @@ jobs:
               (void)url;
               return -1;
           }
+
+          int SDL_GameControllerSetLED(SDL_GameController *gamecontroller,
+                                        unsigned char red,
+                                        unsigned char green,
+                                        unsigned char blue)
+          {
+              (void)gamecontroller;
+              (void)red;
+              (void)green;
+              (void)blue;
+              return -1;
+          }
           EOF
           gcc -shared -fPIC -O2             -Wl,-soname,libsonic3air_sdlshim.so             -o Oxygen/sonic3air/libsonic3air_sdlshim.so             /tmp/sonic3air_sdlshim.c
           file Oxygen/sonic3air/libsonic3air_sdlshim.so
           readelf -Ws Oxygen/sonic3air/libsonic3air_sdlshim.so |
-            grep -E 'SDL_(JoystickHasRumble|OpenURL)'
+            grep -E 'SDL_(JoystickHasRumble|OpenURL|GameControllerSetLED)'
 
       - name: Verify ARM64 and RG34XX-compatible glibc
         run: |
@@ -93,7 +106,7 @@ jobs:
         run: |
           echo "Imported SDL symbols related to compatibility:"
           nm -D Oxygen/sonic3air/sonic3air_linux |
-            grep -E 'SDL_(JoystickHasRumble|OpenURL)' || true
+            grep -E 'SDL_(JoystickHasRumble|OpenURL|GameControllerSetLED)' || true
           echo "Provided shim symbols:"
           nm -D Oxygen/sonic3air/libsonic3air_sdlshim.so |
             grep -E 'SDL_(JoystickHasRumble|OpenURL)'
