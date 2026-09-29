@@ -12,25 +12,40 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Arm64 Multiarch & Toolchain
+      - name: Set up Arm64 Multiarch Repositories & Toolchain
         run: |
-          # Enable ARM64 packages on the x86_64 runner
+          # 1. Enable the ARM64 architecture layout
           sudo dpkg --add-architecture arm64
           
-          # Update repositories with multiarch support
+          # 2. Re-write the package manager sources list to split mirrors correctly
+          # This forces amd64 to use default archives, and arm64 to use the official ports server
+          sudo tee /etc/apt/sources.list << 'EOF'
+          # Standard x86_64 Mirrors
+          deb [arch=amd64] http://ubuntu.com noble main restricted universe multiverse
+          deb [arch=amd64] http://ubuntu.com noble-updates main restricted universe multiverse
+          deb [arch=amd64] http://ubuntu.com noble-backports main restricted universe multiverse
+          deb [arch=amd64] http://ubuntu.com noble-security main restricted universe multiverse
+
+          # ARM64 Ports Mirrors
+          deb [arch=arm64] http://ubuntu.com noble main restricted universe multiverse
+          deb [arch=arm64] http://ubuntu.com noble-updates main restricted universe multiverse
+          deb [arch=arm64] http://ubuntu.com noble-backports main restricted universe multiverse
+          deb [arch=arm64] http://ubuntu.com noble-security main restricted universe multiverse
+          EOF
+
+          # 3. Update package index now that mirrors are split properly
           sudo apt-get update
           
-          # Install cross-compilers
+          # 4. Install cross-compilers
           sudo apt-get install -y build-essential cmake git gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           
-          # Install ARM64 graphics development libraries explicitly
+          # 5. Install ARM64 libraries from the ports mirror
           sudo apt-get install -y libgles2-mesa-dev:arm64 libegl1-mesa-dev:arm64 libdrm-dev:arm64 libgbm-dev:arm64
 
       - name: Compile via CMake
         run: |
           cd Oxygen/sonic3air/build/_cmake
           
-          # Configure CMake with cross-compiler paths and force GLES configuration for handhelds
           cmake -B build \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
