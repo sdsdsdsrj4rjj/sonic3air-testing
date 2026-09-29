@@ -1,49 +1,37 @@
-name: Build ARM64 Linux
+name: Build ARM64 (PortMaster)
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  build-arm64:
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Install Host Cross-Compiler & Local Headers
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake libcurl4-openssl-dev
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake libsdl2-dev
 
-    - name: Inject Missing Curl Headers Domestically
-      run: |
-        # Create the local destination directory structure safely
-        mkdir -p Oxygen/oxygenengine/source/framework/external/curl/curl
-        
-        # Search all active system include locations for the curl header files and copy them over
-        find /usr/include -type f -wholename "*/curl/*.h" -exec cp {} Oxygen/oxygenengine/source/framework/external/curl/curl/ \;
+      - name: Configure CMake
+        run: |
+          cmake -B build Oxygen/sonic3air/build/_cmake \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+            -DCMAKE_BUILD_TYPE=Release
 
-    - name: Configure and Build CMake Project
-      run: |
-        cd Oxygen/sonic3air/build/_cmake
-        
-        # We pass -DGLEW_NO_GLU directly to the global compiler definition block.
-        # This tells the embedded glew.c file to completely skip the GL/glu.h requirement.
-        cmake \
-          -DCMAKE_SYSTEM_NAME=Linux \
-          -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
-          -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
-          -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-          -DCMAKE_CXX_FLAGS="-DGLEW_NO_GLU" \
-          -DCMAKE_C_FLAGS="-DGLEW_NO_GLU" \
-          -DOPENGL_opengl_LIBRARY=/dev/null \
-          -DOPENGL_glx_LIBRARY=/dev/null \
-          -DOPENGL_INCLUDE_DIR=/dev/null \
-          -DCURL_LIBRARY=/dev/null \
-          -DCURL_INCLUDE_DIR=${{ github.workspace }}/Oxygen/oxygenengine/source/framework/external/curl \
-          -DSDL_STATIC=OFF \
-          -DUSE_GLES=ON .
-          
-        make
+      - name: Build Engine
+        run: cmake --build build --config Release
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonic3air-arm64
+          path: build/sonic3air # Verifies your compiled path output
