@@ -8,33 +8,35 @@ on:
 
 jobs:
   build-arm64:
-    name: Build current Sonic 3 AIR ARM64
-    runs-on: ubuntu-24.04-arm
+    name: Build Sonic 3 AIR v26.03.28.0 for RG34XX
+    runs-on: ubuntu-22.04-arm
 
     steps:
-      - name: Clone current upstream Sonic 3 A.I.R.
+      - name: Clone Sonic 3 A.I.R. v26.03.28.0
         uses: actions/checkout@v4
         with:
           repository: Eukaryot/sonic3air
-          ref: main
+          ref: v26.03.28.0-stable
           submodules: recursive
           fetch-depth: 1
 
-      - name: Show source version
+      - name: Show build environment
         run: |
-          grep -E 'BUILD_(NUMBER|VERSION|STRING|VARIANT)' Oxygen/sonic3air/source/sonic3air/version.inc || true
+          uname -a
+          ldd --version | head -n 1
+          g++ --version | head -n 1
 
-      - name: Patch current upstream ImGui stub
+      - name: Patch upstream ImGui declaration
         run: |
           sed -i 's/bool ImGuiIntegration::hasBlockingImGuiWindow()  { return false; }/bool ImGuiIntegration::hasBlockingImGuiWindow() const { return false; }/'             Oxygen/oxygenengine/source/oxygen/menu/imgui/ImGuiIntegration.cpp
           grep -n 'hasBlockingImGuiWindow'             Oxygen/oxygenengine/source/oxygen/menu/imgui/ImGuiIntegration.cpp
 
-      - name: Install PortMaster build dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y             build-essential             cmake             ninja-build             git             pkg-config             libsdl2-dev             libgl1-mesa-dev             libglu1-mesa-dev             libgles2-mesa-dev             libasound2-dev             libpulse-dev             libxcomposite-dev             libxxf86vm-dev             libcurl4-openssl-dev
 
-      - name: Configure using PortMaster recipe
+      - name: Configure
         working-directory: Oxygen/sonic3air/build/_cmake
         run: |
           cmake -G Ninja -B build             -DUSE_GLES=ON             -DBUILD_SDL_STATIC=OFF             -DUSE_DISCORD=OFF             -DUSE_IMGUI=OFF             -DCMAKE_BUILD_TYPE=Release
@@ -44,14 +46,28 @@ jobs:
         run: |
           cmake --build build --parallel 2
 
-      - name: Strip binary like PortMaster
+      - name: Verify ARM64 and RG34XX-compatible glibc
         run: |
           test -f Oxygen/sonic3air/sonic3air_linux
+          file Oxygen/sonic3air/sonic3air_linux
+          readelf --version-info Oxygen/sonic3air/sonic3air_linux |
+            grep -E 'GLIBC_2\.|GLIBCXX_3\.4\.' |
+            sort -V |
+            tail -20
+          if readelf --version-info Oxygen/sonic3air/sonic3air_linux |
+            grep -Eq 'GLIBC_2\.(3[6-9]|[4-9][0-9])'; then
+            echo "ERROR: binary requires glibc newer than the RG34XX glibc 2.35"
+            exit 1
+          fi
+
+      - name: Strip binary
+        run: |
           strip Oxygen/sonic3air/sonic3air_linux
           file Oxygen/sonic3air/sonic3air_linux
 
-      - name: Upload ARM64 binary
+      - name: Upload RG34XX binary
         uses: actions/upload-artifact@v4
         with:
-          name: sonic3air-current-arm64-portmaster
+          name: sonic3air-v26.03.28-arm64-rg34xx
           path: Oxygen/sonic3air/sonic3air_linux
+          if-no-files-found: error
