@@ -21,8 +21,8 @@ jobs:
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Inject standard placeholder links for the graphics libraries to bypass the hardcoded desktop OpenGL check,
-        # forcing CMake to accept the environment layout and hand compilation over to OpenGLES.
+        # Inject stub definitions to clear the hardcoded Curl verification scan,
+        # and disable network-dependent sub-features to avoid build runtime link errors.
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -31,6 +31,9 @@ jobs:
           -DOPENGL_opengl_LIBRARY=stub \
           -DOPENGL_glx_LIBRARY=stub \
           -DOPENGL_INCLUDE_DIR=stub \
+          -DCURL_LIBRARY=stub \
+          -DCURL_INCLUDE_DIR=stub \
+          -DAIR_NETWORK_FEATURES=OFF \
           -DAIR_FORCE_INTERNAL_LIBS=ON \
           -DFAUDIO_INTERNAL=ON \
           -DSDL_STATIC=OFF \
