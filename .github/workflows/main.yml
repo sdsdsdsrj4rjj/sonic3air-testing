@@ -1,37 +1,33 @@
-name: Build ARM64 PortMaster
+name: Build Sonic 3 AIR ARM64
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch: # Allows manual trigger
+  workflow_dispatch: # Allows you to trigger the build manually
 
 jobs:
   build-arm64:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Dependencies
+      - name: Set up QEMU (for ARM64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Build Environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake libsdl2-dev
+          sudo apt-get install -y build-essential cmake libglew-dev libglfw3-dev libtheora-dev libdrm-dev libgbm-dev git
 
-      - name: Configure CMake
+      - name: Compile via CMake
         run: |
-          cmake -B build Oxygen/sonic3air/build/_cmake \
-            -DCMAKE_SYSTEM_NAME=Linux \
-            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
-            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
-            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DCMAKE_BUILD_TYPE=Release
+          cd Oxygen/sonic3air/build/_cmake
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-O3 -march=armv8-a" -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a"
+          cmake --build build --config Release --parallel $(nproc)
 
-      - name: Build Engine
-        run: cmake --build build --config Release
-
-      - name: Upload Artifact
+      - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sonic3air-arm64
-          path: build/sonic3air # Verifies your compiled path output
+          name: sonic3air-arm64-binary
+          path: Oxygen/sonic3air/build/_cmake/build/sonic3air # Adjust if executable output is named differently
