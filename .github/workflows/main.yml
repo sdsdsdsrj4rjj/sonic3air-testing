@@ -21,21 +21,18 @@ jobs:
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Inject stub definitions to clear the hardcoded Curl verification scan,
-        # and disable network-dependent sub-features to avoid build runtime link errors.
+        # We point CURL variables directly to an existing empty location (/dev/null).
+        # This prevents CMake from creating a broken Imported Target layout, clearing the Policy CMP0111 trap.
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
           -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
           -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-          -DOPENGL_opengl_LIBRARY=stub \
-          -DOPENGL_glx_LIBRARY=stub \
-          -DOPENGL_INCLUDE_DIR=stub \
-          -DCURL_LIBRARY=stub \
-          -DCURL_INCLUDE_DIR=stub \
-          -DAIR_NETWORK_FEATURES=OFF \
-          -DAIR_FORCE_INTERNAL_LIBS=ON \
-          -DFAUDIO_INTERNAL=ON \
+          -DOPENGL_opengl_LIBRARY=/dev/null \
+          -DOPENGL_glx_LIBRARY=/dev/null \
+          -DOPENGL_INCLUDE_DIR=/dev/null \
+          -DCURL_LIBRARY=/dev/null \
+          -DCURL_INCLUDE_DIR=/dev/null \
           -DSDL_STATIC=OFF \
           -DUSE_GLES=ON .
           
