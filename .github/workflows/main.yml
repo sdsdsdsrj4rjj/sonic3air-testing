@@ -12,32 +12,34 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install Host Cross-Compiler & Local Dev Headers
+    - name: Install Cross-Compiler Toolchain
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake libsdl2-dev
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake ninja-build
+
+    - name: Install and Build ARM64 Dependencies via Vcpkg
+      run: |
+        cd $VCPKG_INSTALLATION_ROOT
+        ./vcpkg install curl:arm64-linux sdl2:arm64-linux
 
     - name: Configure and Build CMake Project
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # We point CURL variables directly to an existing empty location (/dev/null).
-        # This prevents CMake from creating a broken Imported Target layout, clearing the Policy CMP0111 trap.
+        # Link directly to the clean arm64-linux headers and libraries compiled by vcpkg
         cmake \
+          -G Ninja \
+          -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
+          -DVCPKG_TARGET_TRIPLET=arm64-linux \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
           -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
           -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-          -DOPENGL_opengl_LIBRARY=/dev/null \
-          -DOPENGL_glx_LIBRARY=/dev/null \
-          -DOPENGL_INCLUDE_DIR=/dev/null \
-          -DCURL_LIBRARY=/dev/null \
-          -DCURL_INCLUDE_DIR=/dev/null \
           -DSDL_STATIC=OFF \
           -DUSE_GLES=ON .
           
-        make -j$(nproc)
-
+        ninja
+        
     - name: Upload Compiled Binary Artifact
       uses: actions/upload-artifact@v4
       with:
