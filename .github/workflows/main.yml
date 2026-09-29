@@ -23,7 +23,7 @@ jobs:
           
           rm -rf build
           
-          # Force satisfy OpenGL and CURL verification checks by using local dummy path variables
+          # Force built-in static media subsystems to prevent cross-compile header hunting errors
           cmake -B build \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -39,7 +39,10 @@ jobs:
             -DOPENGL_glx_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
             -DOPENGL_INCLUDE_DIR="/usr/include" \
             -DCURL_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
-            -DCURL_INCLUDE_DIR="/usr/include"
+            -DCURL_INCLUDE_DIR="/usr/include" \
+            -D_THEORA_STATIC=ON \
+            -D_VORBIS_STATIC=ON \
+            -D_OGG_STATIC=ON
             
           cmake --build build --config Release --parallel $(nproc)
 
