@@ -12,26 +12,24 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install Host Cross-Compiler
+    - name: Install Host Cross-Compiler & Local Headers
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake libcurl4-openssl-dev
 
     - name: Inject Missing Curl Headers Domestically
       run: |
-        # Create an absolute target directory path inside the framework's external tree
+        # Create the local destination directory structure
         mkdir -p Oxygen/oxygenengine/source/framework/external/curl/curl
         
-        # Download the official release headers directly into the local source layout
-        curl -sL https://githubusercontent.com -o Oxygen/oxygenengine/source/framework/external/curl/curl/curl.h
-        curl -sL https://githubusercontent.com -o Oxygen/oxygenengine/source/framework/external/curl/curl/curlver.h
-        curl -sL https://githubusercontent.com -o Oxygen/oxygenengine/source/framework/external/curl/curl/system.h
+        # Copy the pre-installed system curl headers directly into the repository tree
+        cp /usr/include/curl/*.h Oxygen/oxygenengine/source/framework/external/curl/curl/
 
     - name: Configure and Build CMake Project
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Direct include paths to point directly to our newly populated domestic folder layout
+        # Point the include paths to our newly populated local directory structure
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
