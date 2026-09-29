@@ -21,13 +21,16 @@ jobs:
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Link dynamically to SDL so it respects your custom launch script .so file,
-        # but keep other backend elements internal.
+        # Inject standard placeholder links for the graphics libraries to bypass the hardcoded desktop OpenGL check,
+        # forcing CMake to accept the environment layout and hand compilation over to OpenGLES.
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
           -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
           -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+          -DOPENGL_opengl_LIBRARY=stub \
+          -DOPENGL_glx_LIBRARY=stub \
+          -DOPENGL_INCLUDE_DIR=stub \
           -DAIR_FORCE_INTERNAL_LIBS=ON \
           -DFAUDIO_INTERNAL=ON \
           -DSDL_STATIC=OFF \
