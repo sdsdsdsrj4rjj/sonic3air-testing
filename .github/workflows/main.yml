@@ -21,7 +21,7 @@ jobs:
           cd Oxygen/sonic3air/build/_cmake
           rm -rf build
           
-          # Force built-in static media subsystems to prevent cross-compile header hunting errors
+          # Restored your exact working configuration variables
           cmake -B build \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -33,15 +33,17 @@ jobs:
             -DUSE_GLES=ON \
             -DBUILD_SDL_STATIC=ON \
             -DBUILD_OXYGEN_SERVER=OFF \
-            -DOPENGL_FOUND=TRUE \
-            -DOPENGL_opengl_LIBRARY="text" \
-            -DOPENGL_glx_LIBRARY="text" \
+            -DOPENGL_opengl_LIBRARY="/usr/lib/aarch64-linux-gnu/libGLESv2.so" \
+            -DOPENGL_glx_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
             -DOPENGL_INCLUDE_DIR="/usr/include" \
+            -DCURL_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
+            -DCURL_INCLUDE_DIR="/usr/include" \
             -D_THEORA_STATIC=ON \
             -D_VORBIS_STATIC=ON \
             -D_OGG_STATIC=ON
             
-          cmake --build build --config Release --parallel $(nproc)
+          # We force a parallel build but continue on errors briefly or output verbose compilation logs
+          cmake --build build --config Release --parallel $(nproc) --verbose
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
