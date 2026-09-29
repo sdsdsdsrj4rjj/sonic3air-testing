@@ -12,34 +12,33 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install Cross-Compiler Toolchain
+    - name: Install Host Cross-Compiler & Multiarch Headers
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake ninja-build
-
-    - name: Install and Build ARM64 Dependencies via Vcpkg
-      run: |
-        cd $VCPKG_INSTALLATION_ROOT
-        ./vcpkg install curl:arm64-linux sdl2:arm64-linux
+        # Install the cross-compiler alongside the precise development headers for Curl and SDL2
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake libcurl4-openssl-dev libsdl2-dev
 
     - name: Configure and Build CMake Project
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # Link directly to the clean arm64-linux headers and libraries compiled by vcpkg
+        # We point include tracking paths directly to our system's active header directories (/usr/include),
+        # but map the library file pointers to /dev/null so it links to your custom Anbernic OS runtime libraries.
         cmake \
-          -G Ninja \
-          -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
-          -DVCPKG_TARGET_TRIPLET=arm64-linux \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
           -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
           -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+          -DOPENGL_opengl_LIBRARY=/dev/null \
+          -DOPENGL_glx_LIBRARY=/dev/null \
+          -DOPENGL_INCLUDE_DIR=/usr/include \
+          -DCURL_LIBRARY=/dev/null \
+          -DCURL_INCLUDE_DIR=/usr/include \
           -DSDL_STATIC=OFF \
           -DUSE_GLES=ON .
           
-        ninja
-        
+        make -j$(nproc)
+
     - name: Upload Compiled Binary Artifact
       uses: actions/upload-artifact@v4
       with:
