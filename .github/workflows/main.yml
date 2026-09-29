@@ -7,12 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
-        uses: actions/actions/checkout@v4
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Toolchain & Core Build Tools
+      - name: Setup ARM64 Multi-Arch and Install Dependencies
         run: |
+          sudo dpkg --add-architecture arm64
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
@@ -20,15 +21,17 @@ jobs:
             git \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
-            libgles2-mesa-dev \
-            libegl1-mesa-dev
+            libsdl2-dev:arm64 \
+            libgles2-mesa-dev:arm64 \
+            libegl1-mesa-dev:arm64 \
+            libcurl4-openssl-dev:arm64
 
       - name: Compile via CMake
         run: |
           cd Oxygen/sonic3air/build/_cmake
           rm -rf build
           
-          # Force built-in static media subsystems to prevent cross-compile header hunting errors
+          # Use proper cross-compilation flags matching target multiarch paths
           cmake -B build \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -38,7 +41,7 @@ jobs:
             -DCMAKE_C_FLAGS="-O3 -march=armv8-a" \
             -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
             -DUSE_GLES=ON \
-            -DBUILD_SDL_STATIC=ON \
+            -DBUILD_SDL_STATIC=OFF \
             -DBUILD_OXYGEN_SERVER=OFF \
             -D_THEORA_STATIC=ON \
             -D_VORBIS_STATIC=ON \
@@ -50,4 +53,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sonic3air-arm64-binary
-          path: Oxygen/sonic3air/build/_cmake/build/sonic3air
+          path: Oxygen/sonic3air/build/_cmake/build/sonic3air*
