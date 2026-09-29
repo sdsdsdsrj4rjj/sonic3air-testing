@@ -21,6 +21,9 @@ jobs:
           arch: aarch64
           distro: ubuntu_latest
           
+          # Force the container environment to execute commands as root
+          user: root
+          
           # Pass paths down into our virtual workspace setup
           githubToken: ${{ github.token }}
           
