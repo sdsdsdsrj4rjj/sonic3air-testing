@@ -27,15 +27,16 @@ jobs:
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
             -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-            -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
-            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_FLAGS="-O3 -march=armv8-a" \
             -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
             -DUSE_GLES=ON \
             -DBUILD_SDL_STATIC=ON \
             -DBUILD_OXYGEN_SERVER=OFF \
+            -DOPENGL_FOUND=TRUE \
+            -DOPENGL_opengl_LIBRARY="text" \
+            -DOPENGL_glx_LIBRARY="text" \
+            -DOPENGL_INCLUDE_DIR="/usr/include" \
             -D_THEORA_STATIC=ON \
             -D_VORBIS_STATIC=ON \
             -D_OGG_STATIC=ON
