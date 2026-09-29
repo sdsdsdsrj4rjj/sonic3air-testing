@@ -23,7 +23,7 @@ jobs:
           
           rm -rf build
           
-          # Force CMake past the find_package(OpenGL) check by satisfying variables with dummy paths
+          # Force GLES, mock the desktop GL libraries, and drop the CURL-reliant server subsystem
           cmake -B build \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -34,6 +34,7 @@ jobs:
             -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
             -DUSE_GLES=ON \
             -DBUILD_SDL_STATIC=ON \
+            -DBUILD_OXYGEN_SERVER=OFF \
             -DOPENGL_opengl_LIBRARY="/usr/lib/aarch64-linux-gnu/libGLESv2.so" \
             -DOPENGL_glx_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
             -DOPENGL_INCLUDE_DIR="/usr/include"
