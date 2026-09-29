@@ -12,16 +12,27 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Set up QEMU for ARM64 Emulation
-      uses: docker/setup-qemu-action@v3
-
-    - name: Compile inside ARM64 Ubuntu Container
+    - name: Compile using Native Cross-Compiler Container
       run: |
-        docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace -w /workspace arm64v8/ubuntu:24.04 bash -c "
-          apt-get update && \
-          apt-get install -y gcc g++ cmake libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libsdl2-dev libcurl4-openssl-dev && \
+        docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace dockcross/linux-arm64-lts bash -c "
+          # 1. Update package database inside toolchain container
+          sudo apt-get update && \
+          
+          # 2. Install game engine development libraries targeting ARM64
+          sudo apt-get install -y libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libegl1-mesa-dev:arm64 libsdl2-dev:arm64 libcurl4-openssl-dev:arm64 && \
+          
+          # 3. Enter CMake directory
           cd Oxygen/sonic3air/build/_cmake && \
-          cmake -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 . && \
+          
+          # 4. Configure using the pre-built toolchain variables provided by dockcross
+          cmake \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+            -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+            -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY . && \
+            
+          # 5. Native speed compilation
           make -j$(nproc)
         "
 
