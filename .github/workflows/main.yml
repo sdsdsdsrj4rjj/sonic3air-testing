@@ -12,18 +12,26 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install Host Cross-Compiler & Multiarch Headers
+    - name: Install Host Cross-Compiler
       run: |
         sudo apt-get update
-        # Install the cross-compiler alongside the precise development headers for Curl and SDL2
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake libcurl4-openssl-dev libsdl2-dev
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu cmake
+
+    - name: Inject Missing Curl Headers Domestically
+      run: |
+        # Create an absolute target directory path inside the framework's external tree
+        mkdir -p Oxygen/oxygenengine/source/framework/external/curl/curl
+        
+        # Download the official release headers directly into the local source layout
+        curl -sL https://githubusercontent.com -o Oxygen/oxygenengine/source/framework/external/curl/curl/curl.h
+        curl -sL https://githubusercontent.com -o Oxygen/oxygenengine/source/framework/external/curl/curl/curlver.h
+        curl -sL https://githubusercontent.com -o Oxygen/oxygenengine/source/framework/external/curl/curl/system.h
 
     - name: Configure and Build CMake Project
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # We point include tracking paths directly to our system's active header directories (/usr/include),
-        # but map the library file pointers to /dev/null so it links to your custom Anbernic OS runtime libraries.
+        # Direct include paths to point directly to our newly populated domestic folder layout
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -31,9 +39,9 @@ jobs:
           -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
           -DOPENGL_opengl_LIBRARY=/dev/null \
           -DOPENGL_glx_LIBRARY=/dev/null \
-          -DOPENGL_INCLUDE_DIR=/usr/include \
+          -DOPENGL_INCLUDE_DIR=/dev/null \
           -DCURL_LIBRARY=/dev/null \
-          -DCURL_INCLUDE_DIR=/usr/include \
+          -DCURL_INCLUDE_DIR=../../oxygenengine/source/framework/external/curl \
           -DSDL_STATIC=OFF \
           -DUSE_GLES=ON .
           
