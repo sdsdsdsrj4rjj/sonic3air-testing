@@ -29,29 +29,29 @@ jobs:
           sed -i 's/bool ImGuiIntegration::hasBlockingImGuiWindow()  { return false; }/bool ImGuiIntegration::hasBlockingImGuiWindow() const { return false; }/'             Oxygen/oxygenengine/source/oxygen/menu/imgui/ImGuiIntegration.cpp
           grep -n 'hasBlockingImGuiWindow'             Oxygen/oxygenengine/source/oxygen/menu/imgui/ImGuiIntegration.cpp
 
-      - name: Install build dependencies
+      - name: Install PortMaster build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y             build-essential             cmake             ninja-build             git             libgl1-mesa-dev             libglu1-mesa-dev             libgles2-mesa-dev             libasound2-dev             libpulse-dev             libxcomposite-dev             libxxf86vm-dev             libcurl4-openssl-dev
+          sudo apt-get install -y             build-essential             cmake             ninja-build             git             pkg-config             libsdl2-dev             libgl1-mesa-dev             libglu1-mesa-dev             libgles2-mesa-dev             libasound2-dev             libpulse-dev             libxcomposite-dev             libxxf86vm-dev             libcurl4-openssl-dev
 
-      - name: Configure ARM64 release
+      - name: Configure using PortMaster recipe
         working-directory: Oxygen/sonic3air/build/_cmake
         run: |
-          cmake -G Ninja -B build             -DCMAKE_BUILD_TYPE=Release             -DCMAKE_SYSTEM_PROCESSOR=aarch64             -DUSE_DISCORD=OFF             -DUSE_GLES=ON             -DUSE_IMGUI=OFF             -DBUILD_OXYGEN_ENGINEAPP=OFF             -DBUILD_OXYGEN_SERVER=OFF             -DBUILD_SDL_STATIC=ON
+          cmake -G Ninja -B build             -DUSE_GLES=ON             -DBUILD_SDL_STATIC=OFF             -DUSE_DISCORD=OFF             -DUSE_IMGUI=OFF             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         working-directory: Oxygen/sonic3air/build/_cmake
         run: |
           cmake --build build --parallel 2
 
-      - name: Verify ARM64 binary
+      - name: Strip binary like PortMaster
         run: |
           test -f Oxygen/sonic3air/sonic3air_linux
+          strip Oxygen/sonic3air/sonic3air_linux
           file Oxygen/sonic3air/sonic3air_linux
-          chmod +x Oxygen/sonic3air/sonic3air_linux
 
       - name: Upload ARM64 binary
         uses: actions/upload-artifact@v4
         with:
-          name: sonic3air-current-arm64
+          name: sonic3air-current-arm64-portmaster
           path: Oxygen/sonic3air/sonic3air_linux
