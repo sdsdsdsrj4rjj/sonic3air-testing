@@ -1,7 +1,7 @@
 name: Build Sonic 3 AIR ARM64
 
 on:
-  workflow_dispatch: # Allows you to trigger the build manually
+  workflow_dispatch:
 
 jobs:
   build-arm64:
@@ -12,22 +12,29 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up QEMU (for ARM64 emulation)
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Build Environment
+      - name: Set up Build Environment & Cross-Compiler
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake libglew-dev libglfw3-dev libtheora-dev libdrm-dev libgbm-dev git
+          sudo apt-get install -y build-essential cmake git gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Compile via CMake
         run: |
           cd Oxygen/sonic3air/build/_cmake
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-O3 -march=armv8-a" -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a"
+          
+          # Force CMake to use the aarch64 cross-compiler toolchain
+          cmake -B build \
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_FLAGS="-O3 -march=armv8-a" \
+            -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a"
+            
           cmake --build build --config Release --parallel $(nproc)
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sonic3air-arm64-binary
-          path: Oxygen/sonic3air/build/_cmake/build/sonic3air # Adjust if executable output is named differently
+          path: Oxygen/sonic3air/build/_cmake/build/sonic3air
