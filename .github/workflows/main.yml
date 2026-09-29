@@ -88,11 +88,41 @@ jobs:
           readelf -Ws Oxygen/sonic3air/libsonic3air_sdlshim.so |
             grep -E 'SDL_(JoystickHasRumble|OpenURL|GameControllerSetLED)'
 
+      - name: Package Sonic 3 A.I.R. runtime data
+        run: |
+          cd Oxygen/sonic3air
+          ./sonic3air_linux -pack
+
+          test -f enginedata.bin
+          test -f gamedata.bin
+          test -f audiodata.bin
+          test -f audioremaster.bin
+          test -f data/metadata.json
+
+          rm -rf package
+          mkdir -p package/data
+
+          cp enginedata.bin gamedata.bin audiodata.bin audioremaster.bin data/metadata.json package/data/
+          cp config.json package/
+
+          curl -L --fail --retry 3             -o /tmp/sonic3air_game.tar.gz             https://github.com/Eukaryot/sonic3air/releases/download/v26.03.28.0-stable/sonic3air_game.tar.gz
+
+          rm -rf sonic3air_game
+          tar -xzf /tmp/sonic3air_game.tar.gz --wildcards "*/scripts.bin"
+          test -f sonic3air_game/data/scripts.bin
+          cp sonic3air_game/data/scripts.bin package/data/scripts.bin
+
+          cp sonic3air_linux package/
+          cp libsonic3air_sdlshim.so package/
+
+          echo "Packaged runtime:"
+          find package -maxdepth 2 -type f -printf '%P\n' | sort
+
       - name: Verify ARM64 and RG34XX-compatible glibc
         run: |
-          test -f Oxygen/sonic3air/sonic3air_linux
-          file Oxygen/sonic3air/sonic3air_linux
-          readelf --version-info Oxygen/sonic3air/sonic3air_linux |
+          test -f Oxygen/sonic3air/package/sonic3air_linux
+          file Oxygen/sonic3air/package/sonic3air_linux
+          readelf --version-info Oxygen/sonic3air/package/sonic3air_linux |
             grep -E 'GLIBC_2\.|GLIBCXX_3\.4\.' |
             sort -V |
             tail -20
@@ -105,24 +135,22 @@ jobs:
       - name: Inspect SDL imports
         run: |
           echo "Imported SDL symbols related to compatibility:"
-          nm -D Oxygen/sonic3air/sonic3air_linux |
+          nm -D Oxygen/sonic3air/package/sonic3air_linux |
             grep -E 'SDL_(JoystickHasRumble|OpenURL|GameControllerSetLED)' || true
           echo "Provided shim symbols:"
-          nm -D Oxygen/sonic3air/libsonic3air_sdlshim.so |
-            grep -E 'SDL_(JoystickHasRumble|OpenURL)'
+          nm -D Oxygen/sonic3air/package/libsonic3air_sdlshim.so |
+            grep -E 'SDL_(JoystickHasRumble|OpenURL|GameControllerSetLED)'
 
       - name: Strip binaries
         run: |
-          strip Oxygen/sonic3air/sonic3air_linux
-          strip Oxygen/sonic3air/libsonic3air_sdlshim.so
+          strip Oxygen/sonic3air/package/sonic3air_linux
+          strip Oxygen/sonic3air/package/libsonic3air_sdlshim.so
           file Oxygen/sonic3air/sonic3air_linux
           file Oxygen/sonic3air/libsonic3air_sdlshim.so
 
-      - name: Upload RG34XX binary and SDL shim
+      - name: Upload complete RG34XX runtime
         uses: actions/upload-artifact@v4
         with:
           name: sonic3air-v26.03.28-arm64-rg34xx
-          path: |
-            Oxygen/sonic3air/sonic3air_linux
-            Oxygen/sonic3air/libsonic3air_sdlshim.so
+          path: Oxygen/sonic3air/package
           if-no-files-found: error
