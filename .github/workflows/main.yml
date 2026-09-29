@@ -29,13 +29,15 @@ jobs:
       run: |
         cd Oxygen/sonic3air/build/_cmake
         
-        # We strip out global flag overrides to let librmx compile normally at 48%.
-        # Instead, we pass clean target mocks to the system backend layer.
+        # We pass -DGLEW_NO_GLU directly to the global compiler definition block.
+        # This tells the embedded glew.c file to completely skip the GL/glu.h requirement.
         cmake \
           -DCMAKE_SYSTEM_NAME=Linux \
           -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
           -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
           -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+          -DCMAKE_CXX_FLAGS="-DGLEW_NO_GLU" \
+          -DCMAKE_C_FLAGS="-DGLEW_NO_GLU" \
           -DOPENGL_opengl_LIBRARY=/dev/null \
           -DOPENGL_glx_LIBRARY=/dev/null \
           -DOPENGL_INCLUDE_DIR=/dev/null \
