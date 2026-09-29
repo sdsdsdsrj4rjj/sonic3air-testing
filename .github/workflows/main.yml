@@ -21,10 +21,9 @@ jobs:
         run: |
           cd Oxygen/sonic3air/build/_cmake
           
-          # Force a fresh configuration build
           rm -rf build
           
-          # Cross-compile everything completely isolated from host packages
+          # Force CMake past the find_package(OpenGL) check by satisfying variables with dummy paths
           cmake -B build \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -35,8 +34,9 @@ jobs:
             -DCMAKE_CXX_FLAGS="-O3 -march=armv8-a" \
             -DUSE_GLES=ON \
             -DBUILD_SDL_STATIC=ON \
-            -D_OPENGLES_LIBRARY="GLESv2" \
-            -D_OPENGL_IMPLEMENTATION="GLESv2"
+            -DOPENGL_opengl_LIBRARY="/usr/lib/aarch64-linux-gnu/libGLESv2.so" \
+            -DOPENGL_glx_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
+            -DOPENGL_INCLUDE_DIR="/usr/include"
             
           cmake --build build --config Release --parallel $(nproc)
 
