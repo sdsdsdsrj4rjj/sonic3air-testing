@@ -21,7 +21,7 @@ jobs:
           cd Oxygen/sonic3air/build/_cmake
           rm -rf build
           
-          # Restored your exact working configuration variables
+          # Restored working configuration variables
           cmake -B build \
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
@@ -41,10 +41,24 @@ jobs:
             -D_THEORA_STATIC=ON \
             -D_VORBIS_STATIC=ON \
             -D_OGG_STATIC=ON
-            
-          # We force a parallel build but continue on errors briefly or output verbose compilation logs
-          cmake --build build --config Release --parallel $(nproc) --verbose
 
+          # Run the standard build configuration pass to generate the build folder structure
+          cmake --target lemonscript build
+
+          # Fix: Manually compile the missing object file before the archiver runs
+          LEMON_SRC="$GITHUB_WORKSPACE/Oxygen/lemonscript/source/lemon/compiler"
+          LEMON_OBJ="build/CMakeFiles/lemonscript.dir/$LEMON_SRC"
+          mkdir -p "$LEMON_OBJ"
+          aarch64-linux-gnu-gcc -O3 -march=armv8-a -c "$LEMON_SRC/TokenHelper.c" -o "$LEMON_OBJ/TokenHelper.c.o"
+
+          # Fix the generated link file to use the object file instead of the raw C source
+          if [ -f build/CMakeFiles/lemonscript.dir/link.txt ]; then
+            sed -i "s|TokenHelper.c|TokenHelper.c.o|g" build/CMakeFiles/lemonscript.dir/link.txt
+          fi
+
+          # Build everything
+          cmake --build build --config Release --parallel $(nproc)
+          
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
