@@ -8,17 +8,21 @@ on:
 
 jobs:
   build-arm64:
-    name: Build Sonic 3 AIR ARM64
+    name: Build current Sonic 3 AIR ARM64
     runs-on: ubuntu-24.04-arm
 
     steps:
-      - name: Checkout Sonic 3 A.I.R. v26.03.28.0
+      - name: Clone current upstream Sonic 3 A.I.R.
         uses: actions/checkout@v4
         with:
           repository: Eukaryot/sonic3air
-          ref: v26.03.28.0-stable
+          ref: main
           submodules: recursive
           fetch-depth: 1
+
+      - name: Show source version
+        run: |
+          grep -E 'BUILD_(NUMBER|VERSION|STRING|VARIANT)' Oxygen/sonic3air/source/sonic3air/version.inc || true
 
       - name: Install build dependencies
         run: |
@@ -26,6 +30,7 @@ jobs:
           sudo apt-get install -y \
             build-essential \
             cmake \
+            ninja-build \
             git \
             libgl1-mesa-dev \
             libglu1-mesa-dev \
@@ -36,28 +41,32 @@ jobs:
             libxxf86vm-dev \
             libcurl4-openssl-dev
 
-      - name: Configure
+      - name: Configure ARM64 release
         working-directory: Oxygen/sonic3air/build/_cmake
         run: |
-          cmake -B build \
+          cmake -G Ninja -B build \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
             -DUSE_DISCORD=OFF \
             -DUSE_GLES=ON \
-            -DBUILD_SDL_STATIC=ON \
-            -DBUILD_OXYGEN_SERVER=OFF
+            -DUSE_IMGUI=OFF \
+            -DBUILD_OXYGEN_ENGINEAPP=OFF \
+            -DBUILD_OXYGEN_SERVER=OFF \
+            -DBUILD_SDL_STATIC=ON
 
       - name: Build
         working-directory: Oxygen/sonic3air/build/_cmake
         run: |
-          cmake --build build --config Release --parallel
+          cmake --build build --parallel 2
 
       - name: Verify ARM64 binary
         run: |
+          test -f Oxygen/sonic3air/sonic3air_linux
           file Oxygen/sonic3air/sonic3air_linux
           chmod +x Oxygen/sonic3air/sonic3air_linux
 
       - name: Upload ARM64 binary
         uses: actions/upload-artifact@v4
         with:
-          name: sonic3air-v26.03.28-arm64
+          name: sonic3air-current-arm64
           path: Oxygen/sonic3air/sonic3air_linux
