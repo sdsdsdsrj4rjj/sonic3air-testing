@@ -1,5 +1,4 @@
-name: Build Sonic 3 AIR ARM64
-
+name: Build Sonic 3 AIR ARM64 RG34XX
 on:
   workflow_dispatch:
 
@@ -8,19 +7,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
-        uses: actions/checkout@v4
+        uses: actions/actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install Toolchain & Core Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            git \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            libgles2-mesa-dev \
+            libegl1-mesa-dev
 
       - name: Compile via CMake
         run: |
           cd Oxygen/sonic3air/build/_cmake
-          
           rm -rf build
           
           # Force built-in static media subsystems to prevent cross-compile header hunting errors
@@ -35,11 +40,6 @@ jobs:
             -DUSE_GLES=ON \
             -DBUILD_SDL_STATIC=ON \
             -DBUILD_OXYGEN_SERVER=OFF \
-            -DOPENGL_opengl_LIBRARY="/usr/lib/aarch64-linux-gnu/libGLESv2.so" \
-            -DOPENGL_glx_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
-            -DOPENGL_INCLUDE_DIR="/usr/include" \
-            -DCURL_LIBRARY="/usr/lib/aarch64-linux-gnu/libEGL.so" \
-            -DCURL_INCLUDE_DIR="/usr/include" \
             -D_THEORA_STATIC=ON \
             -D_VORBIS_STATIC=ON \
             -D_OGG_STATIC=ON
